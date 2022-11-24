@@ -6,16 +6,46 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
+)
+
+const (
+	csvName = "problems.csv"
+	timeout = 2
 )
 
 func main() {
 	lines := preprocessing()
 	problems := parseLines(lines)
-	startProblemSet(problems)
+
+	timeLimit := flag.Int("limit", timeout, "the time limit of quiz in secs")
+	timer := time.NewTimer(time.Duration(*timeLimit) * time.Second)
+
+	correct := 0
+	for i, problem := range problems {
+		fmt.Printf("Problem %d: %s = ", i+1, problem.q)
+		ansChan := make(chan string)
+		go func() {
+			var ans string
+			fmt.Scanf("%s\n", &ans)
+			ansChan <- ans
+		}()
+
+		select {
+		case <-timer.C:
+			fmt.Printf("\nYou scored %d out of %d. \n", correct, len(problems))
+			return
+		case ans := <-ansChan:
+
+			if ans == problem.a {
+				correct++
+			}
+		}
+	}
 }
 
 func preprocessing() [][]string {
-	csvFileName := flag.String("csv", "problems.csv", "a csv file in the format of 'question,answer'")
+	csvFileName := flag.String("csv", csvName, "a csv file in the format of 'question,answer'")
 	flag.Parse()
 
 	file, err := os.Open(*csvFileName)
@@ -33,25 +63,6 @@ func preprocessing() [][]string {
 	}
 
 	return lines
-}
-
-func startProblemSet(problems []problem) {
-	correct := 0
-	for i, problem := range problems {
-		fmt.Printf("Problem %d: %s = \n", i+1, problem.q)
-
-		var ans string
-		fmt.Scanf("%s\n", &ans)
-
-		if ans == problem.a {
-			// fmt.Println("Correct !")
-			correct++
-			// } else {
-
-		}
-	}
-
-	fmt.Printf("You scored %d out of %d. \n", correct, len(problems))
 }
 
 func parseLines(lines [][]string) []problem {
