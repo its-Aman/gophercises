@@ -1,0 +1,3 @@
+module CHOOSE_YOUR_OWN_ADVENTURE
+
+go 1.19
